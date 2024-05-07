@@ -5,11 +5,15 @@ import OrderBook from './views/OrderBook.vue';
 const routes = [
   {
     path: '/',
+    redirect: '/orderbook'
+  },
+  {
+    path: '/orderbook',
     name: 'OrderBook',
     component: OrderBook
   },
   {
-    path: '/Settings',
+    path: '/settings',
     name: 'Settings',
     component: Settings
   }

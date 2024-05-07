@@ -1,14 +1,26 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+import {onMounted} from 'vue'
+import Header from './components/Header.vue'
+import { useOrderBookStore } from "@store/orderbook";
+
+onMounted(async () => {
+    await useOrderBookStore().fetchOrderBook();
+});
 </script>
 
 <template>
-  <div id="app">
-    <Header />
-    <router-view />
-  </div>
+  <v-app>
+    <v-app-bar app>
+      <Header />
+    </v-app-bar>
+
+    <!-- Sizes your content based upon application components -->
+    <v-main>
+      <v-container fluid>
+        <router-view />
+      </v-container>
+    </v-main>
+  </v-app>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>
