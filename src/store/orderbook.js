@@ -4,9 +4,13 @@ import BinanceApiService from '../services/binanceApi';
 
 export const useOrderBookStore = defineStore('orderbook', () => {
     // State
+
+    const bids = ref(new Map());
+    const asks = ref(new Map());
+    const lastUpdateId = ref(0); // TODO: remove orderBook ref and use these three refs instead
     const orderBook = ref({
-        bids: [],
-        asks: [],
+        bids: new Map(),
+        asks: new Map(),
         lastUpdateId: 0
     });
 
@@ -16,13 +20,40 @@ export const useOrderBookStore = defineStore('orderbook', () => {
         try {
             const newOrderBook = await BinanceApiService().getOrderBook(valutePair);
             console.log('orderbook', newOrderBook);
-            orderBook.value = newOrderBook;
+            
+            const bids = new Map(newOrderBook.bids);
+            const asks = new Map(newOrderBook.asks);
+
+            setOrderBook({ bids, asks, lastUpdateId: newOrderBook.lastUpdateId });
+
         } catch (error) {
             console.error('Error fetching the order book:', error);
         }
+
     }
+
+    async function subscribeToOrderBookUpdates(valutePair = 'BTCUSDT') {
+        const handleOrderBookUpdate = (update) => {
+            setOrderBook(update);
+            console.log('Order book updated:', update);
+        };
+
+        const ws = await BinanceApiService().subscribeToOrderBook(valutePair, handleOrderBookUpdate);
+        return () => {
+            console.log('ws iunside subscribeToOrderBookUpdatese:', ws);
+            if (ws) {
+                ws.close();
+                console.log(`Unsubscribed from ${valutePair} order book updates.`);
+            }
+
+        };
+    }
+
+
     function setOrderBook(newOrderBook) {
-        orderBook.value = newOrderBook;
+       lastUpdateId.value = newOrderBook.lastUpdateId;
+       bids.value = newOrderBook.bids;
+       asks.value = newOrderBook.asks;
     }
 
     function clearOrderBook() {
@@ -33,5 +64,5 @@ export const useOrderBookStore = defineStore('orderbook', () => {
     const totalOrders = computed(() => orderBook.value.length);
 
     // Return the store interface
-    return { fetchOrderBook, orderBook, setOrderBook, clearOrderBook, totalOrders };
+    return { fetchOrderBook, bids, asks, setOrderBook, clearOrderBook, totalOrders, subscribeToOrderBookUpdates };
 });
