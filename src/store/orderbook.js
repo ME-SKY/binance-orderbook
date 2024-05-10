@@ -20,7 +20,7 @@ export const useOrderBookStore = defineStore('orderbook', () => {
         try {
             const newOrderBook = await BinanceApiService().getOrderBook(valutePair);
             console.log('orderbook', newOrderBook);
-            
+
             const bids = new Map(newOrderBook.bids);
             const asks = new Map(newOrderBook.asks);
 
@@ -51,9 +51,9 @@ export const useOrderBookStore = defineStore('orderbook', () => {
 
 
     function setOrderBook(newOrderBook) {
-       lastUpdateId.value = newOrderBook.lastUpdateId;
-       bids.value = newOrderBook.bids;
-       asks.value = newOrderBook.asks;
+        lastUpdateId.value = newOrderBook.lastUpdateId;
+        bids.value = newOrderBook.bids;
+        asks.value = newOrderBook.asks;
     }
 
     function clearOrderBook() {
@@ -63,6 +63,26 @@ export const useOrderBookStore = defineStore('orderbook', () => {
     // Getters
     const totalOrders = computed(() => orderBook.value.length);
 
+    const tableBids = computed(function () {
+        return Array.from(bids.value.entries())
+            .map(([price, quantity]) => ({
+                price: (+price).toFixed(2),
+                quantity,
+                total: parseFloat((price * quantity).toFixed(7))
+            }))
+            .sort((a, b) => b.price - a.price);
+    });
+
+    const tableAsks = computed(function () {
+        return Array.from(asks.value.entries())
+            .map(([price, quantity]) => ({
+                price: (+price).toFixed(2),
+                quantity,
+                total: parseFloat((price * quantity).toFixed(7))
+            }))
+            .sort((a, b) => b.price - a.price);
+    })
+
     // Return the store interface
-    return { fetchOrderBook, bids, asks, setOrderBook, clearOrderBook, totalOrders, subscribeToOrderBookUpdates };
+    return { fetchOrderBook, bids, asks, setOrderBook, clearOrderBook, totalOrders, subscribeToOrderBookUpdates, tableBids, tableAsks };
 });

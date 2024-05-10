@@ -1,70 +1,163 @@
 <script setup>
 import { storeToRefs } from "pinia";
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch, onBeforeUnmount } from 'vue';
 import { useOrderBookStore } from '@store/orderbook';
-// import { VList, VListItem, VListItemTitle } from 'vuetify/lib';
 
 const orderBookStore = useOrderBookStore();
 console.log('orderBookStore', orderBookStore);
 
-const { orderBook } = storeToRefs(orderBookStore);
-console.log('orderBookRef after storeToRefs', orderBook);
+const { tableAsks, tableBids } = storeToRefs(orderBookStore);
+const unsubscribeHandler = ref(null);
+// console.log('orderBookRef after storeToRefs', orderBook);
 
-watch(() => orderBook, () => {
-    console.log('Order book updated:', orderBook);
-});
-
-
-
-// const fetchOrderBookData = async () => {
-//   return new Promise((resolve) => {
-//     setTimeout(() => {
-//       resolve({
-//         bids: [],
-//         asks: []
-//       });
-//     }, 1000);
-//   });
-// };
-
-// const orderBookData = ref({
-//   bids: [],
-//   asks: []
+// watch(() => bids, () => {
+// console.log('Order book updated:', bids);
 // });
 
-// const initializeOrderBookData = async () => {
-//   try {
-//     const data = await fetchOrderBookData();
-//     orderBookData.value = data;
-//   } catch (error) {
-//     console.error('Failed to fetch order book data:', error);
-//   }
-// };
+
+onMounted(() => {
+    orderBookStore.subscribeToOrderBookUpdates().then(wsObjectFunctionToClose => {
+        unsubscribeHandler.value = wsObjectFunctionToClose;
+    });
+    // console.log('inside onMounted', unsubscribeHandler.value);
+});
+
+onBeforeUnmount(() => {
+    // console.log('inside onBeforeUnmount', unsubscribeHandler.value);
+    if (unsubscribeHandler.value) {
+        unsubscribeHandler.value();
+    }
+});
 
 </script>
 
 <template>
-    <div>
-        <h1>Order Book</h1>
-        <section>
-            <h2>Bids</h2>
-            <v-list>
-                <v-list-item v-for="(bid, index) in orderBook.bids" :key="`bid-${index}`">
-                    <v-list-item-title>{{ bid[0] }} {{ bid[1] }}</v-list-item-title>
-                </v-list-item>
-            </v-list>
+    <div class="order-book">
+
+        <div class="order-book__table-header">
+            <h5>Price</h5>
+            <h5>Quantity</h5>
+            <h5>Total</h5>
+        </div>
+
+        <section class="order-book__asks-section">
+
+            <table>
+                <tbody>
+                    <tr v-for="ask in tableAsks" :key="ask.price">
+                        <td class="price">{{ ask.price }}</td>
+                        <td class="quantity">{{ ask.quantity }}</td>
+                        <td class="total">{{ ask.total }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </section>
-        <section>
-            <h2>Asks</h2>
-            <v-list>
-                <v-list-item v-for="(ask, index) in orderBook.asks" :key="`ask-${index}`">
-                    <v-list-item-title>{{ ask[0] }} {{ ask[1] }}</v-list-item-title>
-                </v-list-item>
-            </v-list>
+
+        <section class="order-book__bids-section">
+
+            <table>
+                <tbody>
+                    <tr v-for="bid in tableBids" :key="bid.price">
+                        <td class="price">{{ bid.price }}</td>
+                        <td class="quantity">{{ bid.quantity }}</td>
+                        <td class="total">{{ bid.total }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </section>
     </div>
 </template>
 
 <style scoped>
-/* Add your scoped styles here */
+.order-book {
+    height: 100%;
+    max-height: 100%;
+    display: flex;
+    flex-flow: column nowrap;
+}
+
+.order-book__asks-section,
+.order-book__bids-section {
+    flex: 48%;
+}
+
+.order-book__asks-section {
+    display: flex;
+    align-items: end;
+}
+
+.order-book__asks-section table,
+.order-book__bids-section table {
+    /* border-collapse: collapse !important;
+    border-spacing: 0; */
+    width: 100%;
+}
+
+.order-book__asks-section table tr,
+.order-book__bids-section table tr {
+    /* border: 1px solid black; */
+    /* border-spacing: 4px; */
+    margin: 4px 0;
+    border-collapse: collapse;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 5px;
+}
+
+/* td { */
+    /* flex: 32%; */
+/* } */
+
+.price {
+    flex: 20%;
+    text-align: left;
+}
+
+.quantity {
+    flex: 40%;
+}
+
+.total {
+    flex: 40%;
+}
+.quantity, .total {
+    text-align: right;
+}
+
+.order-book__table-header {
+    padding: 0 10px;
+    flex: 4%;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.order-book__table-header h5 {
+    flex: 33%;
+}
+
+.order-book__table-header h5:last-child {
+    text-align: right;
+}
+
+.order-book__asks-section .price {
+    /* flex: 50% */
+    color: red;
+    /* Green background with opacity */
+}
+
+.order-book__bids-section .price{
+    color: green;
+    
+}
+
+.v-list-item {
+    margin-bottom: 4px;
+    /* Adjust spacing between list items */
+    font-size: 0.8em;
+    /* Decrease font size */
+}
 </style>

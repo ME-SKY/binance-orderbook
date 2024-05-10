@@ -85,7 +85,7 @@ function BinanceApiService() {
             } 
             
             if(localOrderBook.bids.size > 10) {
-                localOrderBook.bids = resizeMap(localOrderBook.bids, 10, false);
+                localOrderBook.bids = resizeMap(localOrderBook.bids, 10, true);
             }
 
             callback(localOrderBook);
