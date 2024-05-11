@@ -20,12 +20,12 @@ function BinanceApiService() {
         baseURL: BINANCE_API_BASE_URL,
     });
 
-    async function getOrderBook(valutePair) {
+    async function getOrderBook(valutePair, limit = 10) {
         try {
             const response = await http.get(`/api/v3/depth`, {
                 params: {
                     symbol: valutePair.toUpperCase(),
-                    limit: 10, //TODO: make as parameter, 10 used only as demo
+                    limit: limit, //TODO: make as parameter, 10 used only as demo
                 },
             });
             return response.data;
@@ -35,16 +35,18 @@ function BinanceApiService() {
         }
     }
 
-    async function subscribeToOrderBook(valutePair, callback) {
+    async function subscribeToOrderBook(valutePair, limit, callback) {
 
         const streamName = `${valutePair.toLowerCase()}@depth`;
         let localOrderBook = {};
+        const arrayBids = [];
+        const arrayAsks = [];
         let lastUpdateId = null;
         let uPrevious = false;
 
         async function loadSnapshot() {
             try {
-                const snapshot = await getOrderBook(valutePair);
+                const snapshot = await getOrderBook(valutePair, limit);
                 localOrderBook = processSnapshot(snapshot);
                 lastUpdateId = snapshot.lastUpdateId;
                 console.log("Snapshot loaded successfully.");
@@ -63,6 +65,7 @@ function BinanceApiService() {
 
         function updateLocalOrderBook(event) {
             const { e, b, a } = event;
+            console.log('bids.length', b.length, 'asks', a.length);
 
             for (const [price, quantity] of b) {
                 if ((+quantity) == '0') {
@@ -80,12 +83,12 @@ function BinanceApiService() {
                 }
             }
 
-            if(localOrderBook.asks.size > 10) { //TODO:  10/50/100/500/1000 should comes from limit param
-                localOrderBook.asks = resizeMap(localOrderBook.asks, 10, true); //TODO: 10/50/100/500/1000 should comes from limit param
+            if(localOrderBook.asks.size > limit) { //TODO:  10/50/100/500/1000 should comes from limit param
+                localOrderBook.asks = resizeMap(localOrderBook.asks, limit, false); //TODO: 10/50/100/500/1000 should comes from limit param
             } 
             
-            if(localOrderBook.bids.size > 10) {
-                localOrderBook.bids = resizeMap(localOrderBook.bids, 10, true);
+            if(localOrderBook.bids.size > limit) {
+                localOrderBook.bids = resizeMap(localOrderBook.bids, limit, true);
             }
 
             callback(localOrderBook);

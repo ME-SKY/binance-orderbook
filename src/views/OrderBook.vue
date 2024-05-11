@@ -6,7 +6,7 @@ import { useOrderBookStore } from '@store/orderbook';
 const orderBookStore = useOrderBookStore();
 console.log('orderBookStore', orderBookStore);
 
-const { tableAsks, tableBids } = storeToRefs(orderBookStore);
+const { bids, asks } = storeToRefs(orderBookStore);
 const unsubscribeHandler = ref(null);
 // console.log('orderBookRef after storeToRefs', orderBook);
 
@@ -44,7 +44,7 @@ onBeforeUnmount(() => {
 
             <table>
                 <tbody>
-                    <tr v-for="ask in tableAsks" :key="ask.price">
+                    <tr v-for="ask in asks" :key="ask.price">
                         <td class="price">{{ ask.price }}</td>
                         <td class="quantity">{{ ask.quantity }}</td>
                         <td class="total">{{ ask.total }}</td>
@@ -57,7 +57,7 @@ onBeforeUnmount(() => {
 
             <table>
                 <tbody>
-                    <tr v-for="bid in tableBids" :key="bid.price">
+                    <tr v-for="bid in bids" :key="bid.price">
                         <td class="price">{{ bid.price }}</td>
                         <td class="quantity">{{ bid.quantity }}</td>
                         <td class="total">{{ bid.total }}</td>
@@ -78,16 +78,18 @@ onBeforeUnmount(() => {
 
 .order-book__asks-section,
 .order-book__bids-section {
-    flex: 48%;
+    height: auto;
+    max-height: 48%;
 }
 
 .order-book__asks-section {
     display: flex;
-    align-items: end;
+    /* align-items: end; */
 }
 
 .order-book__asks-section table,
 .order-book__bids-section table {
+    height: fit-content;
     /* border-collapse: collapse !important;
     border-spacing: 0; */
     width: 100%;
@@ -128,7 +130,7 @@ onBeforeUnmount(() => {
 
 .order-book__table-header {
     padding: 0 10px;
-    flex: 4%;
+    flex: 0 1 4%;
     display: flex;
     flex-flow: row nowrap;
     justify-content: space-between;
@@ -151,7 +153,7 @@ onBeforeUnmount(() => {
 
 .order-book__bids-section .price{
     color: green;
-    
+
 }
 
 .v-list-item {

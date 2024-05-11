@@ -9,6 +9,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const pairHistory = ref(['BTCUSDT']);
   // const pairSwithingHistory = ref(false);
 
+  
+
 
 
   // Actions
@@ -16,9 +18,13 @@ export const useSettingsStore = defineStore('settings', () => {
   //   settings.value[key] = value;
   // }
 
-  function switchPair(pair) {
-    settings.value.pair = pair;
-    updateHistory(pair);
+  function switchPair(newPair) {
+    pair.value = newPair;
+    updateHistory(newPair);
+  }
+
+  function changeLimit(limit) {
+    limit.value = limit;
   }
 
   function updateHistory(pair) {
@@ -27,8 +33,10 @@ export const useSettingsStore = defineStore('settings', () => {
 
   // Getters
   const getSetting = (key) => settings.value[key];
+
+  // const check
   // const pairHistory = computed(() => pairHistory.value ? );
 
   // Return the store interface
-  return { limit, pair, pairHistory, switchPair};
+  return { limit, pair, pairHistory, switchPair, changeLimit };
 });

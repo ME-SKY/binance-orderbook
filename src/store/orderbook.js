@@ -1,13 +1,19 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import BinanceApiService from '../services/binanceApi';
+import { useSettingsStore } from './settings';
 
 export const useOrderBookStore = defineStore('orderbook', () => {
+
+    const settingsStore = useSettingsStore();
+
     // State
 
     const bids = ref(new Map());
     const asks = ref(new Map());
+
     const lastUpdateId = ref(0); // TODO: remove orderBook ref and use these three refs instead
+    
     const orderBook = ref({
         bids: new Map(),
         asks: new Map(),
@@ -16,15 +22,14 @@ export const useOrderBookStore = defineStore('orderbook', () => {
 
     // Actions
 
-    async function fetchOrderBook(valutePair = 'BTCUSDT') {
+    
+
+    async function fetchOrderBook() {
+        const {pair, limit} = settingsStore;
+
         try {
-            const newOrderBook = await BinanceApiService().getOrderBook(valutePair);
-            console.log('orderbook', newOrderBook);
-
-            const bids = new Map(newOrderBook.bids);
-            const asks = new Map(newOrderBook.asks);
-
-            setOrderBook({ bids, asks, lastUpdateId: newOrderBook.lastUpdateId });
+            const newOrderBook = await BinanceApiService().getOrderBook(pair, limit);
+            setOrderBook({ bids: newOrderBook.bids, asks: newOrderBook.asks, lastUpdateId: newOrderBook.lastUpdateId });
 
         } catch (error) {
             console.error('Error fetching the order book:', error);
@@ -32,28 +37,42 @@ export const useOrderBookStore = defineStore('orderbook', () => {
 
     }
 
-    async function subscribeToOrderBookUpdates(valutePair = 'BTCUSDT') {
+    async function subscribeToOrderBookUpdates() {
+        const {pair, limit} = settingsStore;
         const handleOrderBookUpdate = (update) => {
             setOrderBook(update);
-            console.log('Order book updated:', update);
         };
 
-        const ws = await BinanceApiService().subscribeToOrderBook(valutePair, handleOrderBookUpdate);
+        const ws = await BinanceApiService().subscribeToOrderBook(pair, limit, handleOrderBookUpdate);
         return () => {
-            console.log('ws iunside subscribeToOrderBookUpdatese:', ws);
             if (ws) {
                 ws.close();
-                console.log(`Unsubscribed from ${valutePair} order book updates.`);
+                console.log(`Unsubscribed from ${pair} order book updates.`);
             }
-
         };
     }
 
 
     function setOrderBook(newOrderBook) {
         lastUpdateId.value = newOrderBook.lastUpdateId;
-        bids.value = newOrderBook.bids;
-        asks.value = newOrderBook.asks;
+        // const {limit} = settingsStore;
+        
+        const arrayOfBids = Array.from(newOrderBook.bids.entries()).map(([price, quantity]) => ({
+            price,
+            quantity,
+            total: parseFloat((price * quantity).toFixed(7))
+        })).sort((a, b) => b.price - a.price);
+        
+        const arrayOfAsks = Array.from(newOrderBook.asks.entries()).map(([price, quantity]) => ({
+            price,
+            quantity,
+            total: parseFloat((price * quantity).toFixed(7))
+        }))
+        .sort((a, b) => b.price - a.price);;
+        
+
+        bids.value = arrayOfBids;
+        asks.value = arrayOfAsks;
     }
 
     function clearOrderBook() {
@@ -63,26 +82,26 @@ export const useOrderBookStore = defineStore('orderbook', () => {
     // Getters
     const totalOrders = computed(() => orderBook.value.length);
 
-    const tableBids = computed(function () {
-        return Array.from(bids.value.entries())
-            .map(([price, quantity]) => ({
-                price: (+price).toFixed(2),
-                quantity,
-                total: parseFloat((price * quantity).toFixed(7))
-            }))
-            .sort((a, b) => b.price - a.price);
-    });
+    // const tableBids = computed(function () {
+    //     return Array.from(bids.value.entries())
+    //         .map(([price, quantity]) => ({
+    //             price: (+price).toFixed(2),
+    //             quantity,
+    //             total: parseFloat((price * quantity).toFixed(7))
+    //         }))
+    //         .sort((a, b) => b.price - a.price);
+    // });
 
-    const tableAsks = computed(function () {
-        return Array.from(asks.value.entries())
-            .map(([price, quantity]) => ({
-                price: (+price).toFixed(2),
-                quantity,
-                total: parseFloat((price * quantity).toFixed(7))
-            }))
-            .sort((a, b) => b.price - a.price);
-    })
+    // const tableAsks = computed(function () {
+    //     return Array.from(asks.value.entries())
+    //         .map(([price, quantity]) => ({
+    //             price: (+price).toFixed(2),
+    //             quantity,
+    //             total: parseFloat((price * quantity).toFixed(7))
+    //         }))
+    //         .sort((a, b) => b.price - a.price);
+    // })
 
     // Return the store interface
-    return { fetchOrderBook, bids, asks, setOrderBook, clearOrderBook, totalOrders, subscribeToOrderBookUpdates, tableBids, tableAsks };
+    return { fetchOrderBook, bids, asks, setOrderBook, clearOrderBook, totalOrders, subscribeToOrderBookUpdates };
 });
