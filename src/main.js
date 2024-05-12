@@ -13,6 +13,9 @@ const piniaStore = createPinia()
 const vuetify = createVuetify({
     components,
     directives,
+    theme: {
+        defaultTheme: 'dark'
+    }
 })
 
 createApp(App)

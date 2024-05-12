@@ -5,7 +5,7 @@ const BINANCE_STREAM_BASE_URL = 'wss://stream.binance.com:9443/ws';
 
 function resizeMap(map, n, fromEnd = false) {
     const entries = Array.from(map.entries());
-    
+
     if (fromEnd) {
         const slicedEntries = entries.slice(-n);
         return new Map(slicedEntries);
@@ -25,7 +25,7 @@ function BinanceApiService() {
             const response = await http.get(`/api/v3/depth`, {
                 params: {
                     symbol: valutePair.toUpperCase(),
-                    limit: limit, //TODO: make as parameter, 10 used only as demo
+                    limit: limit,
                 },
             });
             return response.data;
@@ -39,8 +39,6 @@ function BinanceApiService() {
 
         const streamName = `${valutePair.toLowerCase()}@depth`;
         let localOrderBook = {};
-        const arrayBids = [];
-        const arrayAsks = [];
         let lastUpdateId = null;
         let uPrevious = false;
 
@@ -49,11 +47,8 @@ function BinanceApiService() {
                 const snapshot = await getOrderBook(valutePair, limit);
                 localOrderBook = processSnapshot(snapshot);
                 lastUpdateId = snapshot.lastUpdateId;
-                console.log("Snapshot loaded successfully.");
-                return true;
             } catch (error) {
                 console.error('Error loading snapshot:', error);
-                reject(error);
             }
         }
 
@@ -64,8 +59,7 @@ function BinanceApiService() {
         }
 
         function updateLocalOrderBook(event) {
-            const { e, b, a } = event;
-            console.log('bids.length', b.length, 'asks', a.length);
+            const { b, a } = event;
 
             for (const [price, quantity] of b) {
                 if ((+quantity) == '0') {
@@ -83,11 +77,11 @@ function BinanceApiService() {
                 }
             }
 
-            if(localOrderBook.asks.size > limit) { //TODO:  10/50/100/500/1000 should comes from limit param
-                localOrderBook.asks = resizeMap(localOrderBook.asks, limit, false); //TODO: 10/50/100/500/1000 should comes from limit param
-            } 
-            
-            if(localOrderBook.bids.size > limit) {
+            if (localOrderBook.asks.size > limit) { // if quantity more than limit - resize to fit limit
+                localOrderBook.asks = resizeMap(localOrderBook.asks, limit, false);
+            }
+
+            if (localOrderBook.bids.size > limit) {
                 localOrderBook.bids = resizeMap(localOrderBook.bids, limit, true);
             }
 
@@ -99,30 +93,24 @@ function BinanceApiService() {
         const ws = new WebSocket(`${BINANCE_STREAM_BASE_URL}/${streamName}`);
 
         ws.onmessage = (message) => {
-            const eventData = JSON.parse(message.data); 
-
-            //TODO: refactor this, u is the same as lastUpdateId in the snapshot
+            const eventData = JSON.parse(message.data);
+            
             if (uPrevious === false) {
-
+                
                 if (eventData.U <= lastUpdateId + 1 && eventData.u >= lastUpdateId + 1) {
                     updateLocalOrderBook(eventData);
                     uPrevious = eventData.u;
                 } else {
                     uPrevious = eventData.u;
-                    console.log("Invalid event received. Skipping update.");
-                    console.log('lastUpdateId:', lastUpdateId);
-                    console.log('eventData.U:', eventData.U);
-                    console.log('eventData.u:', eventData.u);
                 }
             } else {
+                
                 if (eventData.U === uPrevious + 1) {
                     localOrderBook.lastUpdateId = eventData.u;
                     updateLocalOrderBook(eventData);
                     uPrevious = eventData.u;
-
                 } else {
                     uPrevious = eventData.u;
-                    console.log('skipped!!!')
                 }
             }
         };
@@ -131,13 +119,9 @@ function BinanceApiService() {
             console.error('WebSocket encountered an error:', error.message);
         };
 
-        ws.onopen = () => {
-            console.log('open connection!');
-        };
-
         return ws;
     }
-
+    
     return { getOrderBook, subscribeToOrderBook };
 }
 

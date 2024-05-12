@@ -13,4 +13,10 @@ export const CURRENCY_PAIRS = [
     }
 ];
 
-export const LIMITS = [100, 500, 1000];
+export const BASE_QUOTE = {
+    BTCUSDT: {base: 'BTC', quote: 'USDT'},
+    ETHBTC: {base: 'ETH', quote: 'BTC'},
+    BNBBTC: {base: 'BNB', quote: 'BTC'}
+};
+
+export const LIMITS = [10, 20, 50, 100, 500, 1000];

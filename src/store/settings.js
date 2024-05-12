@@ -1,42 +1,28 @@
 import { defineStore } from 'pinia';
-import {ref, computed} from 'vue';
+import { ref, computed } from 'vue';
+import { LIMITS, CURRENCY_PAIRS, BASE_QUOTE } from '@/consts';
 
 export const useSettingsStore = defineStore('settings', () => {
-  // State
-  // const settings = ref({});
-  const limit = ref(10);
-  const pair = ref('BTCUSDT');
+
+  const limit = ref(LIMITS[0]);
+  const pair = ref(CURRENCY_PAIRS[0].value);
   const pairHistory = ref(['BTCUSDT']);
-  // const pairSwithingHistory = ref(false);
-
-  
-
-
-
-  // Actions
-  // function updateSetting(key, value) {
-  //   settings.value[key] = value;
-  // }
 
   function switchPair(newPair) {
     pair.value = newPair;
     updateHistory(newPair);
   }
 
-  function changeLimit(limit) {
-    limit.value = limit;
+  function changeLimit(newLimit) {
+    limit.value = newLimit;
   }
 
   function updateHistory(pair) {
     pairHistory.value.push(pair);
   }
 
-  // Getters
-  const getSetting = (key) => settings.value[key];
+  const baseAsset = computed(() => BASE_QUOTE[pair.value].base);
+  const quoteAsset = computed(() => BASE_QUOTE[pair.value].quote);
 
-  // const check
-  // const pairHistory = computed(() => pairHistory.value ? );
-
-  // Return the store interface
-  return { limit, pair, pairHistory, switchPair, changeLimit };
+  return { limit, pair, pairHistory, switchPair, changeLimit, baseAsset, quoteAsset };
 });

@@ -14,7 +14,6 @@ onMounted(async () => {
       <Header />
     </v-app-bar>
 
-    <!-- Sizes your content based upon application components -->
     <v-main class="content">
       <v-container fluid class="content__container">
         <router-view />
@@ -26,16 +25,11 @@ onMounted(async () => {
 <style scoped>
 .application {
   overflow-y: hidden;
-  background-color: #f5f5f5;
-  border: 1px solid red;
   max-height: 100dvh;
 }
 
 .content {
   flex: 0 0 100%;
-  /* max-height: 100%; */
-  border: 1px solid blue;
-  /* max-height: calc(100% - 64px); */
   overflow-y: hidden;
 }
 

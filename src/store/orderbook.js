@@ -7,43 +7,30 @@ export const useOrderBookStore = defineStore('orderbook', () => {
 
     const settingsStore = useSettingsStore();
 
-    // State
-
     const bids = ref(new Map());
     const asks = ref(new Map());
 
     const lastUpdateId = ref(0); // TODO: remove orderBook ref and use these three refs instead
-    
-    const orderBook = ref({
-        bids: new Map(),
-        asks: new Map(),
-        lastUpdateId: 0
-    });
-
-    // Actions
-
-    
 
     async function fetchOrderBook() {
-        const {pair, limit} = settingsStore;
+        const { pair, limit } = settingsStore;
 
         try {
             const newOrderBook = await BinanceApiService().getOrderBook(pair, limit);
             setOrderBook({ bids: newOrderBook.bids, asks: newOrderBook.asks, lastUpdateId: newOrderBook.lastUpdateId });
-
         } catch (error) {
             console.error('Error fetching the order book:', error);
         }
-
     }
 
     async function subscribeToOrderBookUpdates() {
-        const {pair, limit} = settingsStore;
+        const { pair, limit } = settingsStore;
         const handleOrderBookUpdate = (update) => {
-            setOrderBook(update);
+            setOrderBookFromStream(update);
         };
 
         const ws = await BinanceApiService().subscribeToOrderBook(pair, limit, handleOrderBookUpdate);
+
         return () => {
             if (ws) {
                 ws.close();
@@ -53,55 +40,42 @@ export const useOrderBookStore = defineStore('orderbook', () => {
     }
 
 
-    function setOrderBook(newOrderBook) {
+
+    function setOrderBook(newBook) {
+        bids.value = newBook.bids.map(([price, quantity]) => ({
+            price,
+            quantity,
+            total: parseFloat((price * quantity).toFixed(7))
+        }));
+
+        asks.value = newBook.asks.map(([price, quantity]) => ({
+            price,
+            quantity,
+            total: parseFloat((price * quantity).toFixed(7))
+        }));
+
+        lastUpdateId.value = newBook.lastUpdateId;
+    }
+
+
+    function setOrderBookFromStream(newOrderBook) {
         lastUpdateId.value = newOrderBook.lastUpdateId;
-        // const {limit} = settingsStore;
-        
+
         const arrayOfBids = Array.from(newOrderBook.bids.entries()).map(([price, quantity]) => ({
             price,
             quantity,
             total: parseFloat((price * quantity).toFixed(7))
         })).sort((a, b) => b.price - a.price);
-        
+
         const arrayOfAsks = Array.from(newOrderBook.asks.entries()).map(([price, quantity]) => ({
             price,
             quantity,
             total: parseFloat((price * quantity).toFixed(7))
-        }))
-        .sort((a, b) => b.price - a.price);;
-        
+        })).sort((a, b) => b.price - a.price);;
 
         bids.value = arrayOfBids;
         asks.value = arrayOfAsks;
     }
 
-    function clearOrderBook() {
-        orderBook.value = [];
-    }
-
-    // Getters
-    const totalOrders = computed(() => orderBook.value.length);
-
-    // const tableBids = computed(function () {
-    //     return Array.from(bids.value.entries())
-    //         .map(([price, quantity]) => ({
-    //             price: (+price).toFixed(2),
-    //             quantity,
-    //             total: parseFloat((price * quantity).toFixed(7))
-    //         }))
-    //         .sort((a, b) => b.price - a.price);
-    // });
-
-    // const tableAsks = computed(function () {
-    //     return Array.from(asks.value.entries())
-    //         .map(([price, quantity]) => ({
-    //             price: (+price).toFixed(2),
-    //             quantity,
-    //             total: parseFloat((price * quantity).toFixed(7))
-    //         }))
-    //         .sort((a, b) => b.price - a.price);
-    // })
-
-    // Return the store interface
-    return { fetchOrderBook, bids, asks, setOrderBook, clearOrderBook, totalOrders, subscribeToOrderBookUpdates };
+    return { fetchOrderBook, bids, asks, setOrderBook, subscribeToOrderBookUpdates };
 });
