@@ -1,6 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Settings from './views/Settings.vue';
-import OrderBook from './views/OrderBook.vue';
 
 const routes = [
   {
@@ -10,12 +8,12 @@ const routes = [
   {
     path: '/orderbook',
     name: 'OrderBook',
-    component: OrderBook
+    component: () => import('./views/OrderBook.vue')
   },
   {
     path: '/settings',
     name: 'Settings',
-    component: Settings
+    component: () => import('./views/Settings.vue')
   }
 ];
 

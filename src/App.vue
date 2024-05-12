@@ -34,6 +34,8 @@ onMounted(async () => {
 }
 
 .content__container {
+  /* display: flex; */
+  /* align-items: center; */
   height: 100%;
 }
 </style>

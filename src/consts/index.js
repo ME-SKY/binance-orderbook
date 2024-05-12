@@ -20,3 +20,5 @@ export const BASE_QUOTE = {
 };
 
 export const LIMITS = [10, 20, 50, 100, 500, 1000];
+
+export const MOBILE_WIDTH = 687;

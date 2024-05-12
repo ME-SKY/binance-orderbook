@@ -1,16 +1,20 @@
 <script setup>
 import Select from '@/components/Select.vue';
-import { LIMITS } from '@/consts';
+import { LIMITS, MOBILE_WIDTH } from '@/consts';
 import { useOrderBookStore } from '@store/orderbook';
 import { useSettingsStore } from '@store/settings';
 import { storeToRefs } from 'pinia';
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref, computed } from 'vue';
 import { useDisplay } from 'vuetify';
 
 const orderBookStore = useOrderBookStore();
 const settingsStore = useSettingsStore();
 
-const { mobile } = useDisplay();
+const { width } = useDisplay();
+
+const isMobile = computed(() => {
+    return width.value < MOBILE_WIDTH;
+});
 
 const { bids, asks } = storeToRefs(orderBookStore);
 const { baseAsset, quoteAsset, limit } = storeToRefs(settingsStore);
@@ -56,7 +60,7 @@ onBeforeUnmount(() => {
             <Select :options="LIMITS" :value="limit" @change="changeLimit" />
 
             <h5>Price({{ quoteAsset }})</h5>
-            <h5 v-if="!mobile">Quantity({{ baseAsset }})</h5>
+            <h5 v-if="!isMobile">Quantity({{ baseAsset }})</h5>
             <h5>Total</h5>
         </div>
 
@@ -66,7 +70,7 @@ onBeforeUnmount(() => {
                 <tbody>
                     <tr v-for="ask in asks" :key="ask.price">
                         <td class="price">{{ ask.price }}</td>
-                        <td v-if="!mobile" class="quantity">{{ ask.quantity }}</td>
+                        <td v-if="!isMobile" class="quantity">{{ ask.quantity }}</td>
                         <td class="total">{{ ask.total }}</td>
                     </tr>
                 </tbody>
@@ -79,7 +83,7 @@ onBeforeUnmount(() => {
                 <tbody>
                     <tr v-for="bid in bids" :key="bid.price">
                         <td class="price">{{ bid.price }}</td>
-                        <td v-if="!mobile" class="quantity">{{ bid.quantity }}</td>
+                        <td v-if="!isMobile" class="quantity">{{ bid.quantity }}</td>
                         <td class="total">{{ bid.total }}</td>
                     </tr>
                 </tbody>
@@ -90,6 +94,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .order-book {
+    margin: 0 auto;
+    max-width: 900px;
     height: 100%;
     max-height: 100%;
     display: flex;
@@ -99,7 +105,7 @@ onBeforeUnmount(() => {
 .order-book__asks-section,
 .order-book__bids-section {
     height: auto;
-    max-height: calc(48% - 5px);
+    max-height: calc(46% - 7px);
     overflow-y: auto;
 }
 
@@ -152,13 +158,14 @@ onBeforeUnmount(() => {
 
 .order-book__table-header {
     padding: 0 10px 0px 0px;
-    flex: 0 1 4%;
-    max-height: 4%;
+    flex: 0 1 8%;
+    max-height: 8%;
     display: flex;
     flex-flow: row nowrap;
     justify-content: space-between;
     align-items: center;
     gap: 4px;
+    margin-bottom: 2px;
 }
 
 .order-book__table-header h5 {

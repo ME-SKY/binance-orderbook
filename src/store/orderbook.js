@@ -10,8 +10,6 @@ export const useOrderBookStore = defineStore('orderbook', () => {
     const bids = ref(new Map());
     const asks = ref(new Map());
 
-    const lastUpdateId = ref(0); // TODO: remove orderBook ref and use these three refs instead
-
     async function fetchOrderBook() {
         const { pair, limit } = settingsStore;
 
@@ -53,13 +51,10 @@ export const useOrderBookStore = defineStore('orderbook', () => {
             quantity,
             total: parseFloat((price * quantity).toFixed(7))
         }));
-
-        lastUpdateId.value = newBook.lastUpdateId;
     }
 
 
     function setOrderBookFromStream(newOrderBook) {
-        lastUpdateId.value = newOrderBook.lastUpdateId;
 
         const arrayOfBids = Array.from(newOrderBook.bids.entries()).map(([price, quantity]) => ({
             price,
