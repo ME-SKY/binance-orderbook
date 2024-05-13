@@ -1,11 +1,6 @@
 <script setup>
-import {onMounted} from 'vue'
-import Header from './components/Header.vue'
-import { useOrderBookStore } from "@store/orderbook";
+import Header from './components/Header.vue';
 
-onMounted(async () => {
-    await useOrderBookStore().fetchOrderBook();
-});
 </script>
 
 <template>

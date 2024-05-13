@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import BinanceApiService from '../services/binanceApi';
 import { useSettingsStore } from './settings';
 
@@ -7,8 +7,8 @@ export const useOrderBookStore = defineStore('orderbook', () => {
 
     const settingsStore = useSettingsStore();
 
-    const bids = ref(new Map());
-    const asks = ref(new Map());
+    const bids = ref([]);
+    const asks = ref([]);
 
     async function fetchOrderBook() {
         const { pair, limit } = settingsStore;
@@ -24,7 +24,7 @@ export const useOrderBookStore = defineStore('orderbook', () => {
     async function subscribeToOrderBookUpdates() {
         const { pair, limit } = settingsStore;
         const handleOrderBookUpdate = (update) => {
-            setOrderBookFromStream(update);
+            setOrderBook(update);
         };
 
         const ws = await BinanceApiService().subscribeToOrderBook(pair, limit, handleOrderBookUpdate);
@@ -36,8 +36,6 @@ export const useOrderBookStore = defineStore('orderbook', () => {
             }
         };
     }
-
-
 
     function setOrderBook(newBook) {
         bids.value = newBook.bids.map(([price, quantity]) => ({
@@ -52,25 +50,5 @@ export const useOrderBookStore = defineStore('orderbook', () => {
             total: parseFloat((price * quantity).toFixed(7))
         }));
     }
-
-
-    function setOrderBookFromStream(newOrderBook) {
-
-        const arrayOfBids = Array.from(newOrderBook.bids.entries()).map(([price, quantity]) => ({
-            price,
-            quantity,
-            total: parseFloat((price * quantity).toFixed(7))
-        })).sort((a, b) => b.price - a.price);
-
-        const arrayOfAsks = Array.from(newOrderBook.asks.entries()).map(([price, quantity]) => ({
-            price,
-            quantity,
-            total: parseFloat((price * quantity).toFixed(7))
-        })).sort((a, b) => b.price - a.price);;
-
-        bids.value = arrayOfBids;
-        asks.value = arrayOfAsks;
-    }
-
     return { fetchOrderBook, bids, asks, setOrderBook, subscribeToOrderBookUpdates };
 });

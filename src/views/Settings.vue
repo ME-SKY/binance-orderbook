@@ -2,11 +2,15 @@
 import { CURRENCY_PAIRS, LIMITS, BASE_QUOTE } from '@/consts';
 import { useSettingsStore } from '@/store/settings';
 import { storeToRefs } from 'pinia';
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
+import BinarySearchTree from '@/utils';
 
 const settingsStore = useSettingsStore();
 const { pair, limit, pairHistory } = storeToRefs(settingsStore);
 
+onMounted(() => {
+    console.log(new BinarySearchTree(10, 'left'));
+})
 const changePair = (ev) => {
     settingsStore.switchPair(ev);
 };

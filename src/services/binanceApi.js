@@ -2,18 +2,7 @@ import axios from 'axios';
 
 const BINANCE_API_BASE_URL = 'https://api.binance.com';
 const BINANCE_STREAM_BASE_URL = 'wss://stream.binance.com:9443/ws';
-
-function resizeMap(map, n, fromEnd = false) {
-    const entries = Array.from(map.entries());
-
-    if (fromEnd) {
-        const slicedEntries = entries.slice(-n);
-        return new Map(slicedEntries);
-    } else {
-        const slicedEntries = entries.slice(0, n);
-        return new Map(slicedEntries);
-    }
-}
+import BinarySearchTree from '@/utils';
 
 function BinanceApiService() {
     const http = axios.create({
@@ -38,54 +27,62 @@ function BinanceApiService() {
     async function subscribeToOrderBook(valutePair, limit, callback) {
 
         const streamName = `${valutePair.toLowerCase()}@depth`;
-        let localOrderBook = {};
+
+        const bidsTree = new BinarySearchTree(limit, 'left');
+        const asksTree = new BinarySearchTree(limit, 'right');
+    
         let lastUpdateId = null;
         let uPrevious = false;
 
         async function loadSnapshot() {
             try {
                 const snapshot = await getOrderBook(valutePair, limit);
-                localOrderBook = processSnapshot(snapshot);
                 lastUpdateId = snapshot.lastUpdateId;
             } catch (error) {
                 console.error('Error loading snapshot:', error);
             }
         }
 
-        function processSnapshot(snapshot) {
-            const bids = new Map(snapshot.bids);
-            const asks = new Map(snapshot.asks);
-            return { bids, asks, lastUpdateId: snapshot.lastUpdateId };
-        }
-
         function updateLocalOrderBook(event) {
             const { b, a } = event;
 
+            const bidsDeletions = [];
+            const asksDeletions = [];
+
             for (const [price, quantity] of b) {
-                if ((+quantity) == '0') {
-                    localOrderBook.bids.delete(price);
+                if (+quantity == '0') {
+                    bidsDeletions.push([price, quantity]);
                 } else {
-                    localOrderBook.bids.set(price, quantity);
+                    bidsTree.insert(price, quantity);
                 }
             }
 
             for (const [price, quantity] of a) {
-                if ((+quantity) == '0') {
-                    localOrderBook.asks.delete(price);
+                if (+quantity == '0') {
+                    asksDeletions.push([price, quantity]);
                 } else {
-                    localOrderBook.asks.set(price, quantity);
+                    asksTree.insert(price, quantity);
                 }
             }
 
-            if (localOrderBook.asks.size > limit) { // if quantity more than limit - resize to fit limit
-                localOrderBook.asks = resizeMap(localOrderBook.asks, limit, false);
-            }
+            while(bidsTree.countNodes() > limit) {
+                if(bidsDeletions.length) {
+                    bidsTree.remove(bidsDeletions.shift()[0]);
+                } else {
+                    bidsTree.removeOldestNode();
+                }
+                
+            };
 
-            if (localOrderBook.bids.size > limit) {
-                localOrderBook.bids = resizeMap(localOrderBook.bids, limit, true);
-            }
+            while(asksTree.countNodes() > limit) {
+                if(asksDeletions.length) {
+                    asksTree.remove(asksDeletions.shift()[0]);
+                } else {
+                    asksTree.removeOldestNode();
+                }
+            };
 
-            callback(localOrderBook);
+            callback({ bids: bidsTree.toArray(), asks: asksTree.toArray() });
         }
 
         await loadSnapshot();
@@ -94,9 +91,9 @@ function BinanceApiService() {
 
         ws.onmessage = (message) => {
             const eventData = JSON.parse(message.data);
-            
+
             if (uPrevious === false) {
-                
+
                 if (eventData.U <= lastUpdateId + 1 && eventData.u >= lastUpdateId + 1) {
                     updateLocalOrderBook(eventData);
                     uPrevious = eventData.u;
@@ -104,9 +101,8 @@ function BinanceApiService() {
                     uPrevious = eventData.u;
                 }
             } else {
-                
+
                 if (eventData.U === uPrevious + 1) {
-                    localOrderBook.lastUpdateId = eventData.u;
                     updateLocalOrderBook(eventData);
                     uPrevious = eventData.u;
                 } else {
@@ -121,7 +117,7 @@ function BinanceApiService() {
 
         return ws;
     }
-    
+
     return { getOrderBook, subscribeToOrderBook };
 }
 
